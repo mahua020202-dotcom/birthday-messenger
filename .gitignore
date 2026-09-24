@@ -1,0 +1,13 @@
+# 依赖
+node_modules/
+package-lock.json
+
+# 回归测试产物
+qa/shots/
+
+# 系统 / 编辑器
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log

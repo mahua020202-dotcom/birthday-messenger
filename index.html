@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#FFD1DC" />
+<title>生日快乐 · 云端粉色城堡</title>
+<!-- 内联 favicon，避免任何外部资源请求 -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='48' font-size='52'%3E%F0%9F%8E%82%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="./src/ui.css" />
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/build/three.module.js",
+    "three/addons/": "./vendor/three/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+<!-- ============ 3D 画布 ============ -->
+<canvas id="gl"></canvas>
+
+<!-- ============ 加载层 ============ -->
+<div id="loadingScreen" class="screen">
+  <div class="loader">
+    <div class="loader-star">★</div>
+    <p id="loadingText">正在云端搭建城堡……</p>
+  </div>
+</div>
+
+<!-- ============ 开始屏幕 ============ -->
+<div id="startScreen" class="screen hidden">
+  <div class="start-inner">
+    <div class="start-crown">👑</div>
+    <h1 class="start-title">生日快乐</h1>
+    <p class="start-sub" id="startSub">献给 亲爱的寿星</p>
+    <p class="start-desc">一座漂浮在云海中的粉色城堡，正在等它的寿星。</p>
+    <button id="enterBtn" class="btn btn-primary btn-glow">
+      <span>进入城堡</span>
+    </button>
+    <button id="resumeBtn" class="btn btn-ghost hidden">继续上次的生日旅程</button>
+    <p class="start-hint">
+      支持链接定制：<code>?name=名字&amp;wishes=祝福1|祝福2&amp;surprise=留言</code>
+    </p>
+  </div>
+</div>
+
+<!-- ============ HUD ============ -->
+<div id="hud" class="hidden">
+  <!-- 左上：寿星名牌 -->
+  <div class="nameplate" id="nameplate">
+    <span class="crown">👑</span>
+    <span class="name" id="hudName">亲爱的寿星</span>
+  </div>
+
+  <!-- 右上：进度环 + 按钮 -->
+  <div class="topright">
+    <div class="progress-ring" id="progressRing" title="生日世界点亮进度">
+      <svg viewBox="0 0 64 64">
+        <circle class="ring-bg" cx="32" cy="32" r="27"></circle>
+        <circle class="ring-fg" id="ringFg" cx="32" cy="32" r="27"></circle>
+      </svg>
+      <div class="ring-label"><b id="progressNum">0</b><i>%</i></div>
+    </div>
+    <button class="icon-btn" id="bookBtn" title="祝福册 (1)">📖<span class="badge" id="bookBadge">0</span></button>
+    <button class="icon-btn" id="settingsBtn" title="设置 (5)">⚙️</button>
+  </div>
+
+  <!-- 底部中央：交互提示 -->
+  <div class="interact-hint hidden" id="interactHint">
+    <kbd>E</kbd><span id="interactText">交互</span>
+  </div>
+
+  <!-- 中央临时消息 -->
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <!-- 目标提示条 -->
+  <div class="questbar" id="questBar">
+    <span class="dot"></span><span id="questText">探索城堡，收集散落的祝福星星</span>
+  </div>
+
+  <!-- 移动端控制 -->
+  <div class="mobile-only" id="touchControls">
+    <div class="joystick" id="joystick">
+      <div class="joy-base"><div class="joy-knob" id="joyKnob"></div></div>
+      <div class="joy-label">冲刺</div>
+    </div>
+    <div class="action-btns">
+      <button class="act-btn" id="jumpBtn">跳跃</button>
+      <button class="act-btn act-interact hidden" id="interactBtn">交互</button>
+    </div>
+  </div>
+
+  <button class="pause-btn" id="pauseBtn" title="暂停 (Esc)">❚❚</button>
+</div>
+
+<!-- ============ 祝福册 ============ -->
+<div id="bookPanel" class="panel hidden">
+  <div class="panel-head">
+    <h2>祝福册</h2>
+    <button class="close-btn" data-close="bookPanel">✕</button>
+  </div>
+  <p class="panel-sub" id="bookSub">已收集 0 / 0</p>
+  <div class="book-list" id="bookList"></div>
+  <div class="panel-foot" id="bookFoot"></div>
+</div>
+
+<!-- ============ 许愿弹窗 ============ -->
+<div id="wishModal" class="modal hidden">
+  <div class="modal-card">
+    <h2>许下你的愿望</h2>
+    <p class="modal-sub" id="wishPrev"></p>
+    <textarea id="wishInput" maxlength="50" placeholder="写下一句愿望……"></textarea>
+    <div class="char-count"><span id="wishCount">0</span>/50</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close="wishModal">取消</button>
+      <button class="btn btn-primary" id="wishConfirm">寄往星空</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 惊喜贺卡 ============ -->
+<div id="surpriseCard" class="modal hidden">
+  <div class="card-3d">
+    <div class="card-inner">
+      <div class="card-shine"></div>
+      <div class="card-cake">🎂</div>
+      <h2 class="card-title" id="cardTitle">生日快乐，亲爱的寿星</h2>
+      <p class="card-msg" id="cardMsg">愿你的每一天都像今天一样闪闪发光。</p>
+      <div class="card-deco">✦ ✧ ✦ ✧ ✦</div>
+      <button class="btn btn-primary" id="cardClose">谢谢你</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 设置 ============ -->
+<div id="settingsPanel" class="panel hidden">
+  <div class="panel-head">
+    <h2>设置</h2>
+    <button class="close-btn" data-close="settingsPanel">✕</button>
+  </div>
+  <div class="settings-body">
+    <label class="row">
+      <span>音乐音量</span>
+      <input type="range" id="setMusic" min="0" max="1" step="0.05" value="0.7" />
+    </label>
+    <label class="row">
+      <span>音效音量</span>
+      <input type="range" id="setSfx" min="0" max="1" step="0.05" value="0.8" />
+    </label>
+    <label class="row">
+      <span>画质</span>
+      <select id="setQuality">
+        <option value="high">高</option>
+        <option value="medium">中</option>
+        <option value="low">低</option>
+      </select>
+    </label>
+    <label class="row">
+      <span>减少动态效果</span>
+      <input type="checkbox" id="setReduce" />
+    </label>
+    <label class="row">
+      <span>语言 / Language</span>
+      <select id="setLang">
+        <option value="zh">中文</option>
+        <option value="en">English</option>
+      </select>
+    </label>
+  </div>
+  <div class="panel-foot">
+    <button class="btn btn-ghost" id="resetBtn">重新开始这段旅程</button>
+  </div>
+</div>
+
+<!-- ============ 暂停菜单 ============ -->
+<div id="pauseMenu" class="modal hidden">
+  <div class="modal-card modal-narrow">
+    <h2>暂停</h2>
+    <button class="btn btn-primary" id="pauseResume">继续探索</button>
+    <button class="btn btn-ghost" id="pauseBook">查看祝福册</button>
+    <button class="btn btn-ghost" id="pauseRestart">重新开始</button>
+  </div>
+</div>
+
+<!-- ============ 最终点亮 ============ -->
+<div id="finalePanel" class="screen hidden finale">
+  <div class="finale-inner">
+    <h1 class="finale-title">你的生日世界已点亮</h1>
+    <p class="finale-sub" id="finaleSub"></p>
+    <div class="finale-stats" id="finaleStats"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="replayBtn">再玩一次</button>
+      <button class="btn btn-ghost" id="shareBtn">分享这一刻</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 恭喜横幅（小） ============ -->
+<div id="rotateHint" class="hidden">建议横屏体验 🌸</div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

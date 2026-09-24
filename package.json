@@ -1,0 +1,12 @@
+{
+  "name": "birthday-castle",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Immersive birthday castle - pure front-end Three.js experience",
+  "scripts": {
+    "start": "python3 -m http.server 5180"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  }
+}
