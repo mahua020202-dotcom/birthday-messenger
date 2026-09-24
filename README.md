@@ -1,7 +1,15 @@
 # 生日快乐 · 云端粉色城堡
 
+**🎂 在线试玩 → https://mahua020202-dotcom.github.io/birthday-messenger/**
+
 一座漂浮在云海中的粉色生日城堡。寿星亲自走进去，收集祝福、许下愿望、打开惊喜、启动庆典，
 最后把整个生日世界点亮。
+
+手机扫一下就能玩，链接后面直接带参数就是专属版本：
+
+```
+https://mahua020202-dotcom.github.io/birthday-messenger/?name=寿星名字&wishes=愿你天天开心@妈妈|愿你梦想成真&surprise=贺卡留言
+```
 
 纯前端实现：**Three.js + 原生 ES Modules + GLSL**，没有后端、没有构建步骤、没有一张外部贴图、
 没有一段外部音乐。所有几何体、着色器、粒子、音效全部程序化生成。
